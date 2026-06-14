@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hyperion Tic-Tac-Toe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=JetBrains+Mono:wght@500&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --surface: #121318;
+      --surface-container-lowest: #0d0e13;
+      --surface-container-low: #1a1b21;
+      --surface-container: #1e1f25;
+      --surface-container-high: #292a2f;
+      --on-surface: #e3e1e9;
+      --on-surface-variant: #b9cacb;
+      --outline: #849495;
+      --outline-variant: #3b494b;
+      --primary: #00dbe9;
+      --on-primary: #00363a;
+      --secondary: #ecb2ff;
+      --on-secondary: #520071;
+      --error: #ffb4ab;
+      --on-error: #690005;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--on-surface);
+      background: radial-gradient(circle at center, #0a0b10 0%, #020308 100%);
+      overflow: hidden;
+    }
+
+    .particles {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+    }
+
+    .app-container {
+      perspective: 1000px;
+      z-index: 10;
+    }
+
+    .app {
+      width: min(94vw, 520px);
+      background: rgba(30, 31, 37, 0.4);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(132, 148, 149, 0.2);
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      border-left: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 32px;
+      padding: 32px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+      transform-style: preserve-3d;
+      transition: transform 0.1s ease-out;
+    }
+
+    h1 {
+      font-family: 'Sora', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      margin: 0 0 24px 0;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      background: linear-gradient(90deg, var(--secondary), var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 10px rgba(0, 219, 233, 0.3));
+    }
+
+    .hud-box {
+      background: rgba(26, 27, 33, 0.5);
+      border: 1px solid var(--outline-variant);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .turn {
+      margin-bottom: 24px;
+      color: var(--on-surface-variant);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .turn span {
+      color: var(--primary);
+      text-shadow: 0 0 8px rgba(0, 219, 233, 0.5);
+    }
+
+    .setup {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(13, 14, 19, 0.8);
+      border: 1px solid var(--outline-variant);
+      border-bottom: 1px solid rgba(0, 219, 233, 0.3);
+      color: var(--on-surface);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      outline: none;
+      box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    input:focus {
+      border-bottom: 1px solid var(--primary);
+      box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.5), 0 4px 15px rgba(0, 219, 233, 0.2);
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    button, label.toggle {
+      background: linear-gradient(90deg, var(--secondary), #cf5cff);
+      border: none;
+      color: var(--on-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-radius: 9999px;
+      padding: 12px 24px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(236, 178, 255, 0.2);
+      user-select: none;
+    }
+
+    button:hover, label.toggle:hover {
+      box-shadow: 0 4px 25px rgba(236, 178, 255, 0.6);
+      transform: translateY(-2px);
+    }
+
+    #newGame {
+      background: linear-gradient(90deg, var(--primary), #00f0ff);
+      color: var(--on-primary);
+      box-shadow: 0 4px 15px rgba(0, 219, 233, 0.2);
+    }
+
+    #newGame:hover {
+      box-shadow: 0 4px 25px rgba(0, 219, 233, 0.6);
+    }
+
+    #resetScore {
+      background: linear-gradient(90deg, var(--error), #ffdad6);
+      color: var(--on-error);
+      box-shadow: 0 4px 15px rgba(255, 180, 171, 0.2);
+    }
+
+    #resetScore:hover {
+      box-shadow: 0 4px 25px rgba(255, 180, 171, 0.6);
+    }
+
+    label.toggle input {
+      display: none;
+    }
+    
+    label.toggle.active {
+      box-shadow: 0 4px 25px rgba(236, 178, 255, 0.8);
+      border: 1px solid var(--secondary);
+    }
+
+    .board {
+      width: 100%;
+      aspect-ratio: 1/1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+      transform: translateZ(20px);
+    }
+
+    .cell {
+      background: rgba(26, 27, 33, 0.6);
+      border: 1px solid rgba(132, 148, 149, 0.1);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      border-left: 1px solid rgba(255,255,255,0.05);
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(48px, 10vw, 72px);
+      font-weight: 800;
+      color: transparent;
+      cursor: pointer;
+      box-shadow: inset 0 4px 10px rgba(0,0,0,0.4);
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .cell:hover:not(.disabled) {
+      background: rgba(41, 42, 47, 0.8);
+      box-shadow: 0 0 15px rgba(0, 219, 233, 0.15), inset 0 2px 5px rgba(0,0,0,0.5);
+    }
+
+    .cell.x {
+      color: var(--primary);
+      text-shadow: 0 0 20px rgba(0, 219, 233, 0.8), 0 0 40px rgba(0, 219, 233, 0.4);
+    }
+
+    .cell.o {
+      color: var(--secondary);
+      text-shadow: 0 0 20px rgba(236, 178, 255, 0.8), 0 0 40px rgba(236, 178, 255, 0.4);
+    }
+
+    .cell.disabled { pointer-events: none; }
+
+    .meta {
+      display: grid;
+      gap: 16px;
+      transform: translateZ(10px);
+    }
+
+    .status {
+      color: var(--primary);
+      text-shadow: 0 0 10px rgba(0, 219, 233, 0.5);
+      font-size: 16px;
+      font-weight: 500;
+      background: linear-gradient(90deg, rgba(0,219,233,0.05), rgba(236,178,255,0.05));
+    }
+
+    .score {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      color: var(--on-surface-variant);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .score b {
+      color: var(--secondary);
+      text-shadow: 0 0 10px rgba(236, 178, 255, 0.5);
+      font-size: 18px;
+      display: block;
+      margin-top: 6px;
+    }
+    
+    .score div:nth-child(2) b {
+      color: var(--on-surface);
+      text-shadow: 0 0 10px rgba(227, 225, 233, 0.5);
+    }
+
+    .score div:first-child b {
+      color: var(--primary);
+      text-shadow: 0 0 10px rgba(0, 219, 233, 0.5);
+    }
+
+    .made-by {
+      margin-top: 24px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      letter-spacing: 0.1em;
+      opacity: 0.6;
+    }
+
+    @media (max-width: 520px) {
+      .setup { grid-template-columns: 1fr; }
+      .app { padding: 24px; border-radius: 24px; }
+      h1 { font-size: 24px; }
+      .cell { border-radius: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="particles"></div>
+  <div class="app-container">
+    <div class="app" id="app">
+      <h1>Hyperion Matrix</h1>
+      
+      <div class="hud-box turn" id="turn">Awaiting initialization...</div>
+
+      <div class="setup">
+        <input id="p1" placeholder="Operator X" value="Player 1">
+        <input id="p2" placeholder="Operator O" value="Player 2">
+      </div>
+
+      <div class="controls">
+        <button id="newGame">Initialize</button>
+        <button id="resetScore">Purge Data</button>
+        <label class="toggle" id="aiLabel"><input type="checkbox" id="ai"> AI Override</label>
+      </div>
+
+      <div class="board" id="board"></div>
+
+      <div class="meta">
+        <div class="hud-box status" id="status">System Online</div>
+        <div class="hud-box score">
+          <div>X Wins: <b id="xWins">0</b></div>
+          <div>Draws: <b id="draws">0</b></div>
+          <div>O Wins: <b id="oWins">0</b></div>
+        </div>
+      </div>
+
+      <div class="made-by">SYS.DESIGN // HYPERION PROTOCOL // OP.KAVYA</div>
+    </div>
+  </div>
+
+  <script>
+    const appEl = document.getElementById('app');
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const turnEl = document.getElementById('turn');
+    const p1El = document.getElementById('p1');
+    const p2El = document.getElementById('p2');
+    const aiEl = document.getElementById('ai');
+    const aiLabelEl = document.getElementById('aiLabel');
+    const xWinsEl = document.getElementById('xWins');
+    const oWinsEl = document.getElementById('oWins');
+    const drawsEl = document.getElementById('draws');
+    const newGameBtn = document.getElementById('newGame');
+    const resetScoreBtn = document.getElementById('resetScore');
+
+    let board = Array(9).fill('');
+    let current = 'X';
+    let running = true;
+    let score = { X: 0, O: 0, D: 0 };
+
+    const lines = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    function nameOf(sym) {
+      return sym === 'X' ? (p1El.value.trim() || 'Operator X') : (p2El.value.trim() || 'Operator O');
+    }
+
+    function render() {
+      boardEl.innerHTML = '';
+      board.forEach((val, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell' + (val ? ` disabled ${val.toLowerCase()}` : '');
+        cell.textContent = val;
+        cell.dataset.i = i;
+        cell.onclick = onCellClick;
+        boardEl.appendChild(cell);
+      });
+      turnEl.innerHTML = `Active Operator: <span>${nameOf(current)} [${current}]</span>`;
+      xWinsEl.textContent = score.X;
+      oWinsEl.textContent = score.O;
+      drawsEl.textContent = score.D;
+    }
+
+    function onCellClick(e) {
+      const i = +e.currentTarget.dataset.i;
+      if (!running || board[i]) return;
+      play(i, current);
+      if (running && aiEl.checked && current === 'O') setTimeout(aiMove, 350);
+    }
+
+    function play(i, sym) {
+      board[i] = sym;
+      const result = getResult();
+      if (result) {
+        running = false;
+        if (result === 'D') {
+          score.D++;
+          statusEl.textContent = 'STALEMATE DETECTED';
+        } else {
+          score[result]++;
+          statusEl.textContent = `VICTORY: ${nameOf(result).toUpperCase()}`;
+        }
+      } else {
+        current = current === 'X' ? 'O' : 'X';
+        statusEl.textContent = `Awaiting input from ${nameOf(current)}...`;
+      }
+      render();
+    }
+
+    function getResult() {
+      for (const [a,b,c] of lines) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
+      }
+      if (board.every(Boolean)) return 'D';
+      return null;
+    }
+
+    function aiMove() {
+      const free = board.map((v,i) => v ? null : i).filter(v => v !== null);
+      // Win
+      for (const i of free) {
+        const copy = board.slice(); copy[i] = 'O';
+        if (isWin(copy, 'O')) return play(i, 'O');
+      }
+      // Block
+      for (const i of free) {
+        const copy = board.slice(); copy[i] = 'X';
+        if (isWin(copy, 'X')) return play(i, 'O');
+      }
+      // Center
+      if (free.includes(4)) return play(4, 'O');
+      // Random
+      const pick = free[Math.floor(Math.random() * free.length)];
+      if (pick !== undefined) play(pick, 'O');
+    }
+
+    function isWin(b, s) {
+      return lines.some(([a,b1,c]) => b[a] === s && b[b1] === s && b[c] === s);
+    }
+
+    function resetBoard() {
+      board = Array(9).fill('');
+      current = 'X';
+      running = true;
+      statusEl.textContent = 'SYSTEM INITIALIZED';
+      render();
+    }
+
+    newGameBtn.onclick = resetBoard;
+    aiEl.onchange = () => {
+      if (aiEl.checked) {
+        p2El.value = 'AI OVERLORD';
+        aiLabelEl.classList.add('active');
+      } else {
+        if (p2El.value === 'AI OVERLORD') p2El.value = 'Operator 2';
+        aiLabelEl.classList.remove('active');
+      }
+      resetBoard();
+    };
+    resetScoreBtn.onclick = () => {
+      score = { X: 0, O: 0, D: 0 };
+      resetBoard();
+    };
+
+    // 3D Spatial Hover Effect
+    document.addEventListener('mousemove', (e) => {
+      const x = (window.innerWidth / 2 - e.pageX) / 45;
+      const y = (window.innerHeight / 2 - e.pageY) / 45;
+      appEl.style.transform = `rotateY(${-x}deg) rotateX(${y}deg)`;
+    });
+
+    // Reset rotation on mobile/touch devices where mousemove is unreliable
+    document.addEventListener('mouseleave', () => {
+      appEl.style.transform = `rotateY(0deg) rotateX(0deg)`;
+    });
+
+    render();
+    statusEl.textContent = 'SYSTEM ONLINE';
+  </script>
+</body>
+</html>
